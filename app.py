@@ -4,6 +4,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import os
+import json
+import tempfile
 from datetime import datetime
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1LqbZ9-4opDOr3slOkj457zx3Bh2xgC0kr2yskHPiWOI/edit"
@@ -14,16 +16,27 @@ SCOPES = [
 
 def google_bejelentkezes():
     creds = None
+
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
+            if "gcp" in st.secrets:
+                client_secret_dict = json.loads(st.secrets["gcp"]["client_secret_json"])
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+                    json.dump(client_secret_dict, f)
+                    temp_path = f.name
+                flow = InstalledAppFlow.from_client_secrets_file(temp_path, SCOPES)
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
             creds = flow.run_local_server(port=0)
+
         with open("token.json", "w") as token:
             token.write(creds.to_json())
+
     return gspread.authorize(creds)
 
 st.set_page_config(page_title="Pannon Borbolt – Borértékelő", layout="centered")
@@ -40,7 +53,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.image("assets/PB-main-logoRGB.svg", width=300)
+st.image("assets/PB-main-logoRGB.png", width=300)
 st.title("Borértékelő")
 
 st.subheader("Alap adatok")
