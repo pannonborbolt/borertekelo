@@ -17,14 +17,21 @@ SCOPES = [
 def google_bejelentkezes():
     creds = None
 
-    if os.path.exists("token.json"):
+    # Streamlit Cloud esetén a Secrets-ből olvassuk a tokent
+    if "gcp" in st.secrets and "token_json" in st.secrets["gcp"]:
+        token_dict = json.loads(st.secrets["gcp"]["token_json"])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(token_dict, f)
+            temp_token_path = f.name
+        creds = Credentials.from_authorized_user_file(temp_token_path, SCOPES)
+    elif os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            if "gcp" in st.secrets:
+            if "gcp" in st.secrets and "client_secret_json" in st.secrets["gcp"]:
                 client_secret_dict = json.loads(st.secrets["gcp"]["client_secret_json"])
                 with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
                     json.dump(client_secret_dict, f)
