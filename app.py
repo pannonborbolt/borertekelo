@@ -60,7 +60,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.image("assets/PB-main-logoRGB.png", width=300)
+st.image("assets/PB-main-logoRGB.svg", width=300)
 st.title("Borértékelő")
 
 st.subheader("Alap adatok")
