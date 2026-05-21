@@ -16,8 +16,6 @@ SCOPES = [
 
 def google_bejelentkezes():
     creds = None
-
-    # Streamlit Cloud esetén a Secrets-ből olvassuk a tokent
     if "gcp" in st.secrets and "token_json" in st.secrets["gcp"]:
         token_dict = json.loads(st.secrets["gcp"]["token_json"])
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -26,7 +24,6 @@ def google_bejelentkezes():
         creds = Credentials.from_authorized_user_file(temp_token_path, SCOPES)
     elif os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -40,11 +37,20 @@ def google_bejelentkezes():
             else:
                 flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", SCOPES)
             creds = flow.run_local_server(port=0)
-
         with open("token.json", "w") as token:
             token.write(creds.to_json())
-
     return gspread.authorize(creds)
+
+def alapra_allitas():
+    for key in ["pince", "bornev", "evjarat", "helyszin", "megjegyzes",
+                "bortipus", "reszletes", "kizart",
+                "szin", "illat", "gyumolcs", "alkohol", "savak",
+                "asvanyok", "izhosszusag", "testesseg",
+                "tanninok", "buborek_finoms", "buborek_allando", "buborek_menny",
+                "vegso_pont"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
 st.set_page_config(page_title="Pannon Borbolt – Borértékelő", layout="centered")
 
@@ -64,27 +70,27 @@ st.image("assets/PB-main-logoRGB.svg", width=300)
 st.title("Borértékelő")
 
 st.subheader("Alap adatok")
-pince = st.text_input("Pincészet", placeholder="pl. Bock")
-bornev = st.text_input("Bor neve", placeholder="pl. Cuvée")
-evjarat = st.text_input("Évjárat", placeholder="pl. 2019")
-bortipus = st.selectbox("Bortípus", ["Vörösbor", "Fehérbor", "Rozé", "Pezsgő / gyöngyöző"])
-helyszin = st.text_input("Helyszín", placeholder="pl. Budapest")
+pince = st.text_input("Pincészet", placeholder="pl. Bock", key="pince")
+bornev = st.text_input("Bor neve", placeholder="pl. Cuvée", key="bornev")
+evjarat = st.text_input("Évjárat", placeholder="pl. 2019", key="evjarat")
+bortipus = st.selectbox("Bortípus", ["Vörösbor", "Fehérbor", "Rozé", "Pezsgő / gyöngyöző"], key="bortipus")
+helyszin = st.text_input("Helyszín", placeholder="pl. Budapest", key="helyszin")
 
 st.subheader("Megjegyzés")
-megjegyzes = st.text_area("Szabad szöveges megjegyzés a borról...", height=100)
+megjegyzes = st.text_area("Szabad szöveges megjegyzés a borról...", height=100, key="megjegyzes")
 
 st.subheader("Értékelési szempontok")
-reszletes = st.toggle("Részletes értékelés")
+reszletes = st.toggle("Részletes értékelés", key="reszletes")
 
 if reszletes:
-    szin = st.slider("Szín és tisztaság", min_value=1, max_value=10, value=5)
-    illat = st.slider("Illat intenzitása", min_value=1, max_value=10, value=5)
-    gyumolcs = st.slider("Gyümölcsösség", min_value=1, max_value=10, value=5)
-    alkohol = st.slider("Alkoholérzet", min_value=1, max_value=10, value=5)
-    savak = st.slider("Savérzet", min_value=1, max_value=10, value=5)
-    asvanyok = st.slider("Ásványosság", min_value=1, max_value=10, value=5)
-    izhosszusag = st.slider("Ízhosszúság", min_value=1, max_value=10, value=5)
-    testesseg = st.slider("Testesség", min_value=1, max_value=10, value=5)
+    szin = st.slider("Szín és tisztaság", min_value=1, max_value=10, value=5, key="szin")
+    illat = st.slider("Illat intenzitása", min_value=1, max_value=10, value=5, key="illat")
+    gyumolcs = st.slider("Gyümölcsösség", min_value=1, max_value=10, value=5, key="gyumolcs")
+    alkohol = st.slider("Alkoholérzet", min_value=1, max_value=10, value=5, key="alkohol")
+    savak = st.slider("Savérzet", min_value=1, max_value=10, value=5, key="savak")
+    asvanyok = st.slider("Ásványosság", min_value=1, max_value=10, value=5, key="asvanyok")
+    izhosszusag = st.slider("Ízhosszúság", min_value=1, max_value=10, value=5, key="izhosszusag")
+    testesseg = st.slider("Testesség", min_value=1, max_value=10, value=5, key="testesseg")
     if bortipus == "Vörösbor":
         tanninok = st.slider("Tanninok", min_value=1, max_value=10, value=5, key="tanninok")
     else:
@@ -103,15 +109,14 @@ else:
     tanninok = buborek_finoms = buborek_allando = buborek_menny = None
 
 st.subheader("Végső pontszám")
-kizart = st.checkbox("Kizárt / hibás bor")
+kizart = st.checkbox("Kizárt / hibás bor", key="kizart")
 
 if kizart:
     vegso_pont = "X"
     verdict = "Kizárt"
     st.error("❌ Kizárt / hibás bor")
 else:
-    vegso_pont = st.number_input("Pontszám (50–100)", min_value=50, max_value=100, value=85, step=1)
-
+    vegso_pont = st.number_input("Pontszám (50–100)", min_value=50, max_value=100, value=85, step=1, key="vegso_pont")
     if vegso_pont >= 95:
         verdict = "Kiemelkedő, briliáns bor"
     elif vegso_pont >= 90:
@@ -124,39 +129,40 @@ else:
         verdict = "Megbízható"
     else:
         verdict = "Nem elfogadható, gyenge bor"
-
     st.metric(label="Értékelés", value=f"{vegso_pont} pont", delta=verdict)
 
-if st.button("💾 Mentés Google Sheetsbe"):
-    if bornev.strip() == "":
-        st.warning("Kérlek add meg a bor nevét!")
-    else:
-        try:
-            gc = google_bejelentkezes()
-            sheet = gc.open_by_url(SHEET_URL).sheet1
-            sor = [
-                datetime.now().strftime("%Y-%m-%d"),
-                helyszin,
-                pince,
-                bornev,
-                evjarat,
-                bortipus,
-                vegso_pont,
-                megjegyzes,
-                szin if szin is not None else "",
-                illat if illat is not None else "",
-                gyumolcs if gyumolcs is not None else "",
-                alkohol if alkohol is not None else "",
-                asvanyok if asvanyok is not None else "",
-                savak if savak is not None else "",
-                izhosszusag if izhosszusag is not None else "",
-                testesseg if testesseg is not None else "",
-                tanninok if tanninok is not None else "",
-                buborek_finoms if buborek_finoms is not None else "",
-                buborek_allando if buborek_allando is not None else "",
-                buborek_menny if buborek_menny is not None else ""
-            ]
-            sheet.append_row(sor)
-            st.success(f"{bornev} sikeresen mentve! ({vegso_pont} pont)")
-        except Exception as e:
-            st.error(f"Hiba részletei: {type(e).__name__}: {e}")
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("💾 Mentés Google Sheetsbe", use_container_width=True):
+        if bornev.strip() == "":
+            st.warning("Kérlek add meg a bor nevét!")
+        else:
+            try:
+                gc = google_bejelentkezes()
+                sheet = gc.open_by_url(SHEET_URL).sheet1
+                sor = [
+                    datetime.now().strftime("%Y-%m-%d"),
+                    helyszin, pince, bornev, evjarat, bortipus,
+                    vegso_pont, megjegyzes,
+                    szin if szin is not None else "",
+                    illat if illat is not None else "",
+                    gyumolcs if gyumolcs is not None else "",
+                    alkohol if alkohol is not None else "",
+                    asvanyok if asvanyok is not None else "",
+                    savak if savak is not None else "",
+                    izhosszusag if izhosszusag is not None else "",
+                    testesseg if testesseg is not None else "",
+                    tanninok if tanninok is not None else "",
+                    buborek_finoms if buborek_finoms is not None else "",
+                    buborek_allando if buborek_allando is not None else "",
+                    buborek_menny if buborek_menny is not None else ""
+                ]
+                sheet.append_row(sor)
+                st.success(f"{bornev} sikeresen mentve! ({vegso_pont} pont)")
+            except Exception as e:
+                st.error(f"Hiba részletei: {type(e).__name__}: {e}")
+
+with col2:
+    if st.button("🔄 Új bor", use_container_width=True):
+        alapra_allitas()
