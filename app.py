@@ -42,14 +42,27 @@ def google_bejelentkezes():
     return gspread.authorize(creds)
 
 def alapra_allitas():
-    for key in ["pince", "bornev", "evjarat", "helyszin", "megjegyzes",
-                "bortipus", "reszletes", "kizart",
-                "szin", "illat", "gyumolcs", "alkohol", "savak",
-                "asvanyok", "izhosszusag", "testesseg",
-                "tanninok", "buborek_finoms", "buborek_allando", "buborek_menny",
-                "vegso_pont"]:
-        if key in st.session_state:
-            del st.session_state[key]
+    st.session_state["pince"] = ""
+    st.session_state["bornev"] = ""
+    st.session_state["evjarat"] = ""
+    st.session_state["helyszin"] = ""
+    st.session_state["megjegyzes"] = ""
+    st.session_state["bortipus"] = "Vörösbor"
+    st.session_state["reszletes"] = False
+    st.session_state["kizart"] = False
+    st.session_state["szin"] = 5
+    st.session_state["illat"] = 5
+    st.session_state["gyumolcs"] = 5
+    st.session_state["alkohol"] = 5
+    st.session_state["savak"] = 5
+    st.session_state["asvanyok"] = 5
+    st.session_state["izhosszusag"] = 5
+    st.session_state["testesseg"] = 5
+    st.session_state["tanninok"] = 5
+    st.session_state["buborek_finoms"] = 5
+    st.session_state["buborek_allando"] = 5
+    st.session_state["buborek_menny"] = 5
+    st.session_state["vegso_pont"] = 85
     st.rerun()
 
 st.set_page_config(page_title="Pannon Borbolt – Borértékelő", layout="centered")
